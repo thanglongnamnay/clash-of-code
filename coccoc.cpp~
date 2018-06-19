@@ -7,7 +7,7 @@
  
 using namespace std;
 
-class stringProcessor {
+class StringProcessor {
 	public:
 		bool stringVectorContain(vector<string> src, const string searchString) {
 			string standardizedSearchString = standardizedString(searchString);
@@ -22,7 +22,7 @@ class stringProcessor {
 				}
 			if (numberOfWordsContain == searchWord.size()) return true;
 			return false;
-		}
+		};
 		string standardizedString (const string originalString) {
 			string resultString = "";
 			const string validChars = "0123456789abcdefghijklmnopqrstuvwxyz ";
@@ -33,7 +33,7 @@ class stringProcessor {
 					resultString += " ";
 			}
 			return resultString;
-		}
+		};
 		vector<string> splitString(const string originalString) {
 			int i = 0;
 			vector<string> newStrings;
@@ -44,15 +44,23 @@ class stringProcessor {
 					newStrings.push_back(word);
 			}
 			return newStrings;
-		}
+		};
 };
 
-class fileProcessor {
+class FileProcessor {
 	public:
-		vector<string> readFileToStrings(const string source = ".") {
+		FileProcessor(const string src) {
+			source = src;
+		};
+		bool fileContain(const string searchString) {
+			StringProcessor sp;
+			return sp.stringVectorContain(readFileToStrings(), searchString);
+		};
+		string source;
+		vector<string> readFileToStrings() {
 			vector<string> resultStrings;
 			string data;
-			stringProcessor sp;
+			StringProcessor sp;
 			ifstream file(source.c_str(), ios::in);
 			while (!file.eof()) {
 				file >> data;
@@ -63,7 +71,11 @@ class fileProcessor {
 			}
 			file.close();
 			return resultStrings;
-		}
+		};
+};
+
+class FolderProcessor {
+	public:
 		vector<string> getFilesNamesInFolder(const string source = ".") {
 			vector<string> resultFilesNames;
 			const string validName = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -71,28 +83,30 @@ class fileProcessor {
 			string path = source + "\\*";
 		    WIN32_FIND_DATA data;
 		    HANDLE hFind;
-		    if ((hFind = FindFirstFile(path.c_str(), &data)) == INVALID_HANDLE_VALUE) 
-				return vector<string>();
+		    if ((hFind = FindFirstFile(path.c_str(), &data)) == INVALID_HANDLE_VALUE) {
+		    	return vector<string>(); //path is not a folder
+    		}
 	        do {
 	        	string fileName = data.cFileName;
 	            if (validName.find(char(tolower(fileName[0]))) < validName.length()){
 	            	vector<string> temp = getFilesNamesInFolder(source + "\\" + fileName);
-	            	if (temp.size()	== 0){
+	            	if (temp.empty()){
 	           	 		resultFilesNames.push_back(source + "\\" + fileName);
-		            } else {
+		            } else if (temp.at(0) != "."){
             			resultFilesNames.insert(resultFilesNames.end(), temp.begin(), temp.end());
             		}
 	            } 
 	        } while (FindNextFile(hFind, &data) != 0);
 	        FindClose(hFind);
-		    return resultFilesNames;
-		}
+	        if (!resultFilesNames.empty()) //something in the folder
+				return resultFilesNames;
+				
+			resultFilesNames.push_back("."); //empty folder
+			return resultFilesNames;
+		};
 };
 
 int main(int argc, char *argv[]) {
-	fileProcessor fp;
-	stringProcessor sp;
-	vector<string> filesNames;
 	if (argv[1] == NULL) {
 		cerr << "No search value" << endl;
 		return 0;
@@ -100,10 +114,12 @@ int main(int argc, char *argv[]) {
 	string searchString = argv[1];
 	string searchFolder = (argv[2] != NULL)? argv[2] : ".";
 	
-	filesNames = fp.getFilesNamesInFolder(searchFolder);
-	for (int i = 0; i < filesNames.size(); ++i){
-		bool fileContain = sp.stringVectorContain(fp.readFileToStrings(filesNames.at(i)), searchString);
-		if (fileContain) cout << filesNames.at(i) << endl;
+	FolderProcessor folderProcessor;
+	vector<string> filesFullNames = folderProcessor.getFilesNamesInFolder(searchFolder);
+	for (int i = 0; i < filesFullNames.size(); ++i) {
+		FileProcessor fileProcessor(filesFullNames.at(i));
+		if (fileProcessor.fileContain(searchString))
+		 cout << filesFullNames.at(i) << endl;
 	}
 	return 0;
 }
