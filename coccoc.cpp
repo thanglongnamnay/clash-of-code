@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <cstring>
+#include <string>
 #include <vector>
 #include <windows.h>
  
@@ -74,11 +74,13 @@ class stringProcessor {
 };
 
 int main(int argc, char *argv[]) {
-	vector<string> filesNames;
-	string searchString = argv[1];
 	fileProcessor fp;
 	stringProcessor sp;
-	filesNames = fp.getFilesNamesInFolder(".");
+	vector<string> filesNames;
+	string searchString = argv[1];
+	string searchFolder = (argv[2] != NULL)? argv[2] : ".";
+	cout << searchFolder << endl;
+	filesNames = fp.getFilesNamesInFolder(searchFolder);
 	for (int i = 0; i < filesNames.size(); ++i){
 		bool fileContain = sp.stringVectorContain(fp.readFileToStrings(filesNames.at(i)), searchString);
 		if (fileContain) cout << filesNames.at(i) << endl;
