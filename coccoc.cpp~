@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <windows.h>
+#include <sstream>
  
 using namespace std;
 
@@ -63,11 +64,10 @@ class stringProcessor {
 		vector<string> splitString(string originalString) {
 			int i = 0;
 			vector<string> newStrings;
-			while (originalString.length()) {
-				newStrings.push_back(originalString.substr(0, originalString.find(" ")));
-				if (originalString.find(" ") <= originalString.length())
-					originalString = originalString.substr(originalString.find(" ") + 1);
-				else originalString = "";
+			stringstream ss(originalString);
+			string word;
+			while (getline(ss, word, ' ')) {
+				newStrings.push_back(word);
 			}
 			return newStrings;
 		}
@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
 	vector<string> filesNames;
 	string searchString = argv[1];
 	string searchFolder = (argv[2] != NULL)? argv[2] : ".";
-	cout << searchFolder << endl;
+	
 	filesNames = fp.getFilesNamesInFolder(searchFolder);
 	for (int i = 0; i < filesNames.size(); ++i){
 		bool fileContain = sp.stringVectorContain(fp.readFileToStrings(filesNames.at(i)), searchString);

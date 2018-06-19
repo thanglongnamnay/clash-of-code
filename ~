@@ -1,1 +1,10 @@
-books asdfasdfasdf fasdf dsfasd fasdf asdf.as d,f.as, d.f/ as,df/, many.
+#include <iostream>
+#include <sstream>
+
+std::string input = "abc,def,ghi";
+std::istringstream ss(input);
+std::string token;
+
+while(std::getline(ss, token, ',')) {
+    std::cout << token << '\n';
+}
