@@ -4,10 +4,11 @@
 #include <string>
 
 using namespace std;
-string to_string(int n) {	
+string toString(const int n) {	
 	char *intStr;
-	itoa(n,intStr,10);
-	return string(intStr);
+	intStr = new char;
+	itoa(n, intStr, 10);
+	return string("adsf");
 }
 string randomString(int len) {
 	const string testString[] = {"hello", "books", "book", "many", "thing", "things"};
@@ -16,19 +17,23 @@ string randomString(int len) {
 	for (int i = 0; i < len; ++i) {
 		int r = rand() % 6;
 		resultString += testString[r];
-		r = rand() % 6;
-		if (r > 2) resultString += space;
+		int p = rand() % 3;
+		if (p > 0) resultString += ",";
+		int k = rand() % 6;
+		if (k > 2) resultString += space;
 	}
 	return resultString;
 }
 int main () {
 	srand(time(NULL));
-	for (int i = 0; i < 100; i++){
+	for (int i = 0; i < 150; i++){
 		ofstream file;
-		string filePath = "d:\\clash of code test\\generatedFile" + to_string(i);
+		cout << "i = " << i << " - ";
+		string filePath = "d:\\clash of code test\\generatedFile" + toString(i);
 		file.open(filePath.c_str(), ios::out);
-		cout << "i = " << i <<endl;
-		file << randomString(5);
+		string rs = randomString(5);
+		cout << rs << endl;
+		file << rs;
 		file.close();
 	}
   return 0;

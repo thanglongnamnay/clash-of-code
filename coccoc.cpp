@@ -7,20 +7,64 @@
  
 using namespace std;
 
+class stringProcessor {
+	public:
+		bool stringVectorContain(vector<string> src, const string searchString) {
+			string standardizedSearchString = standardizedString(searchString);
+			vector<string> searchWord = splitString(standardizedSearchString);
+			int numberOfWordsContain = 0;
+			for (int i = 0; i < searchWord.size(); ++i)
+				for (int j = 0; j < src.size(); ++j) {
+					if (src.at(j) == searchWord.at(i)) {
+						numberOfWordsContain++;
+						break;
+					}
+				}
+			if (numberOfWordsContain == searchWord.size()) return true;
+			return false;
+		}
+		string standardizedString (const string originalString) {
+			string resultString = "";
+			const string validChars = "0123456789abcdefghijklmnopqrstuvwxyz ";
+			for (int i = 0; i < originalString.length(); ++i) {
+				if (validChars.find(originalString[i]) < validChars.length())
+					resultString += originalString[i];
+				else 
+					resultString += " ";
+			}
+			return resultString;
+		}
+		vector<string> splitString(const string originalString) {
+			int i = 0;
+			vector<string> newStrings;
+			stringstream ss(originalString);
+			string word;
+			while (getline(ss, word, ' ')) {
+				if (word.length())
+					newStrings.push_back(word);
+			}
+			return newStrings;
+		}
+};
+
 class fileProcessor {
 	public:
-		vector<string> readFileToStrings(string source = ".") {
+		vector<string> readFileToStrings(const string source = ".") {
 			vector<string> resultStrings;
 			string data;
+			stringProcessor sp;
 			ifstream file(source.c_str(), ios::in);
 			while (!file.eof()) {
 				file >> data;
-				resultStrings.push_back(data);
+				stringstream ss(sp.standardizedString(data));
+				while(getline(ss, data, ' ')){
+					resultStrings.push_back(data);
+				}
 			}
 			file.close();
 			return resultStrings;
 		}
-		vector<string> getFilesNamesInFolder(string source = ".") {
+		vector<string> getFilesNamesInFolder(const string source = ".") {
 			vector<string> resultFilesNames;
 			const string validName = "0123456789abcdefghijklmnopqrstuvwxyz";
 			int length = 0;
@@ -31,7 +75,7 @@ class fileProcessor {
 				return vector<string>();
 	        do {
 	        	string fileName = data.cFileName;
-	            if (validName.find(fileName[0]) < validName.length()){
+	            if (validName.find(char(tolower(fileName[0]))) < validName.length()){
 	            	vector<string> temp = getFilesNamesInFolder(source + "\\" + fileName);
 	            	if (temp.size()	== 0){
 	           	 		resultFilesNames.push_back(source + "\\" + fileName);
@@ -45,38 +89,14 @@ class fileProcessor {
 		}
 };
 
-class stringProcessor {
-	public:
-		bool stringVectorContain(vector<string> src, string searchString) {
-			vector<string> searchWord = splitString(searchString);
-			int numberOfWordsContain = 0;
-			for (int i = 0; i < searchWord.size(); ++i)
-				for (int j = 0; j < src.size(); ++j) {
-					if (src.at(j) == searchWord.at(i)) {
-						numberOfWordsContain++;
-						break;
-					}
-				}
-			if (numberOfWordsContain == searchWord.size()) return true;
-			return false;
-		}
-	private:
-		vector<string> splitString(string originalString) {
-			int i = 0;
-			vector<string> newStrings;
-			stringstream ss(originalString);
-			string word;
-			while (getline(ss, word, ' ')) {
-				newStrings.push_back(word);
-			}
-			return newStrings;
-		}
-};
-
 int main(int argc, char *argv[]) {
 	fileProcessor fp;
 	stringProcessor sp;
 	vector<string> filesNames;
+	if (argv[1] == NULL) {
+		cerr << "No search value" << endl;
+		return 0;
+	}
 	string searchString = argv[1];
 	string searchFolder = (argv[2] != NULL)? argv[2] : ".";
 	
