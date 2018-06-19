@@ -56,6 +56,7 @@ class FileProcessor {
 			StringProcessor sp;
 			return sp.stringVectorContain(readFileToStrings(), searchString);
 		};
+		private:
 		string source;
 		vector<string> readFileToStrings() {
 			vector<string> resultStrings;
