@@ -48,9 +48,10 @@ public:
 class FileProcessor
 {
 public:
-    void setSource(string src) {
-    	source = src;
-    }
+    FileProcessor(const myString src)
+    {
+        source = src;
+    };
     bool fileContain(set<myString> searchWord)
     {
         set<myString> fileContent = readFileToStrings();
@@ -58,7 +59,7 @@ public:
         int numberOfWordsContain = 0;
         for (set<myString>::iterator i = searchWord.begin(); i != searchWord.end(); ++i)
         {
-            if (fileContent.find(*i) == fileContent.end()) return false;
+        	if (fileContent.find(*i) == fileContent.end()) return false;
         }
         return true;
     };
@@ -73,27 +74,22 @@ private:
         string temp;
         ifstream file(source.c_str(), ios::in);
         if (!file.is_open()) return resultStrings;
-        while (!file.eof())
+		while (!file.eof())
         {
             file >> data;
             int i = 0;
             temp = "";
-            while (i < data.length())
-            {
-                if (validChars.find(data[i]) < validCharsLen)
-                {
-                    temp += data[i];
-                }
-                else
-                {
-                    resultStrings.insert(temp);
-                    temp = "";
-                }
-                ++i;
+            while (i < data.length()) {
+            	if (validChars.find(data[i]) < validCharsLen) {
+		            temp += data[i];
+            	}else {
+	            	resultStrings.insert(temp);
+	            	temp = "";
+	            }
+	            i++;
             }
-            if (temp.length())
-            {
-                resultStrings.insert(temp);
+            if (temp.length()){
+          		resultStrings.insert(temp);
             }
         }
         file.close();
@@ -115,7 +111,7 @@ public:
             {
                 resultPath += path[i];
             }
-            ++i;
+            i++;
         }
         return resultPath;
     };
@@ -146,6 +142,10 @@ public:
                 if (temp.empty())
                 {
                     resultFilesNames.push_back(path + "\\" + fileName);
+
+#ifdef DEBUG
+                    cout << "" << path + "\\" + fileName << endl;
+#endif
                 }
                 else if (temp[0] != ".")
                 {
@@ -164,29 +164,32 @@ public:
 
 int main(int argc, char *argv[])
 {
-    clock_t t;
-    t = clock();
-	    if (argv[1] == NULL)
-	    {
-	        cerr << "No search value" << endl;
-	        return 0;
-	    }
-	    string searchString = argv[1];
-	    myString searchWord(searchString);
-	    set<myString> searchWords = searchWord.removePunctuation().splitString();
-	    string searchFolder = argv[2]? argv[2] : ".";
-	    FolderProcessor folderProcessor;
-	    vector<string> filesFullNames = folderProcessor.getFilesNamesInFolder(searchFolder);
-	    int namesSize = filesFullNames.size();
-	    FileProcessor fileProcessor;
-	    for (int i = 0; i < namesSize; ++i)
-	    {
-	        fileProcessor.setSource(filesFullNames[i]);
-	        if (fileProcessor.fileContain(searchWords));
-	            //cout << filesFullNames[i] << endl;
-	    }
+	clock_t t;
+	t = clock();
+    if (argv[1] == NULL)
+    {
+        cerr << "No search value" << endl;
+        return 0;
+    }
+    string searchString = argv[1];
+    myString searchWord(searchString);
+    set<myString> searchWords = searchWord.removePunctuation().splitString();
+    string searchFolder = argv[2]? argv[2] : ".";
+    FolderProcessor folderProcessor;
+    vector<string> filesFullNames = folderProcessor.getFilesNamesInFolder(searchFolder);
+#ifdef DEBUG
+    cout << "get files names done!" << endl << "=============================================" << endl;
+#endif
+    for (int i = 0; i < filesFullNames.size(); ++i)
+    {
+        FileProcessor fileProcessor(filesFullNames[i]);
+        #ifdef DEBUG
+        cout << "Checking:" << filesFullNames[i] << endl;
+        #endif
+        if (fileProcessor.fileContain(searchWords))
+            cout << filesFullNames[i] << endl;
+    }
     t = clock() - t;
     cout << "Done in " << (float(t))/CLOCKS_PER_SEC << "s" << endl;
     return 0;
 }
-
