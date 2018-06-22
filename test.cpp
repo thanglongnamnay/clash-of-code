@@ -1,36 +1,48 @@
 #include <iostream>
-#include <fstream>
 #include <string>
 #include <vector>
-#include <windows.h>
 #include <sstream>
+ 
+	
 using namespace std;
 
-string standardizedString (const string originalString) {
-	string resultString = "";
-	const string validChars = "0123456789abcdefghijklmnopqrstuvwxyz ";
-	for (int i = 0; i < originalString.length(); ++i) {
-		if (validChars.find(originalString[i]) < validChars.length())
-			resultString += originalString[i];
-	}
-	return resultString;
-}
+class myString : public string {
+	public:
+		myString() : string() {};
+		myString(string s) : string(s){};
+		myString(int i, char c) : string(i , c){};
+		myString getThis() {
+			return *this;
+		};
+		myString removePunctuation() {
+			string resultString = "";
+			const string validChars = "0123456789abcdefghijklmnopqrstuvwxyz ";
+			for (int i = 0; i < getThis().length(); ++i) {
+				if (validChars.find(getThis()[i]) < validChars.length())
+					resultString += getThis()[i];
+				else 
+					resultString += " ";
+			}
+			return resultString;
+		};
+		vector<myString> splitString() {
+			int i = 0;
+			vector<myString> newStrings;
+			stringstream ss(getThis());
+			string word;
+			while (getline(ss, word, ' ')) {
+				if (word.length())
+					newStrings.push_back(word);
+			}
+			return newStrings;
+		};
+};
 
-vector<string> splitString(const string originalString) {
-	int i = 0;
-	vector<string> newStrings;
-	stringstream ss(originalString);
-	string word;
-	while (getline(ss, word, ' ')) {
-		cout << "\'" <<word <<"\'" << endl;
-		if (word.length())
-			newStrings.push_back(word);
-	}
-	return newStrings;
-}
-
-int main() {
-	cout << splitString(standardizedString("bookx.sdfgdfg. ! . . . ? asdf "))[1];
-	
+int main(int argc, char* argv[])
+{
+	char *c = "drg.ghj???";
+	myString s(100, 'c');
+	myString ms(s);
+	cout << ms.removePunctuation().splitString()[0];
 	return 0;
 }

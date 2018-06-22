@@ -2,8 +2,10 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <queue>
 #include <windows.h>
 #include <sstream>
+
  
 using namespace std;
 
@@ -15,7 +17,7 @@ class StringProcessor {
 			int numberOfWordsContain = 0;
 			for (int i = 0; i < searchWord.size(); ++i)
 				for (int j = 0; j < src.size(); ++j) {
-					if (src[j] == searchWord[i]) {
+					if (src.at(j) == searchWord.at(i)) {
 						numberOfWordsContain++;
 						break;
 					}
@@ -56,14 +58,14 @@ class FileProcessor {
 			StringProcessor sp;
 			return sp.stringVectorContain(readFileToStrings(), searchString);
 		};
-	private:
+		private:
 		string source;
 		vector<string> readFileToStrings() {
 			vector<string> resultStrings;
 			string data;
 			StringProcessor sp;
 			ifstream file(source.c_str(), ios::in);
-			while (!file.eof()) {
+			while (!(file.eof() && file.tellg()<1024)) {
 				file >> data;
 				stringstream ss(sp.standardizedString(data));
 				while(getline(ss, data, ' ')){
@@ -89,59 +91,71 @@ class FolderProcessor {
 			}
 			return resultPath;
 		};
-		vector<string> getFilesNamesInFolder(const string source = ".") {
-			vector<string> resultFilesNames;
+		bool getFilesNamesInFolder(const string source = ".", queue<string> &filesNames) {
 			const string validName = "0123456789abcdefghijklmnopqrstuvwxyz";
-			const DWORD MAX_SIZE_SCAN = 1024;
+			const DWORD MAX_SIZE_SCAN = 1000;
 			int length = 0;
 			string path = standardizedPath(source);
 			string pattern = path + "\\*";
 		    WIN32_FIND_DATA data;
 		    HANDLE hFind;
 		    if ((hFind = FindFirstFile(pattern.c_str(), &data)) == INVALID_HANDLE_VALUE) {
-		    	return vector<string>(); //path is not a folder
-    		}
-	        do {
-				if (data.nFileSizeLow > MAX_SIZE_SCAN*1024 || data.nFileSizeHigh> 0) {
+		    	return false; //path is not a folder
+			}
+		    do { //path is folder
+		    	if (data.nFileSizeLow > MAX_SIZE_SCAN*1024 || data.nFileSizeHigh	> 0) {
 					continue;
-				}
-	        	string fileName = data.cFileName;
-	            if (validName.find(char(tolower(fileName[0]))) < validName.length()){
-	            	vector<string> temp = getFilesNamesInFolder(path + "\\" + fileName);
-	            	if (temp.empty()){
-	           	 		resultFilesNames.push_back(path + "\\" + fileName);
-	           	 		
-						#ifdef DEBUG
-					   		cout << path + "\\" + fileName;
-							system("cls");
-						#endif
-		            } else if (temp[0] != "."){
-            			resultFilesNames.insert(resultFilesNames.end(), temp.begin(), temp.end());
-            		}
-	            } 
-	        } while (FindNextFile(hFind, &data) != 0);
-	        FindClose(hFind);
-	        if (!resultFilesNames.empty()) //something in the folder
-				return resultFilesNames;
-				
-			resultFilesNames.push_back("."); //empty folder
-			return resultFilesNames;
+		    	}
+		    	string fileName = data.cFileName;
+		        if (validName.find(char(tolower(fileName[0]))) < validName.length()){
+		        	WIN32_FIND_DATA nextData;
+		        	if (FindFirstFile((path + "\\" + fileName + "\\*").c_str(), &nextData) == INVALID_HANDLE_VALUE){
+		       	 		filesNames.push(path + "\\" + fileName);
+		       	 		//cout << path + "\\" + fileName << endl;
+		            } else if (nextData.cFileName != "."){
+		    			getFilesNamesInFolder(path + "\\" + fileName, filesNames);
+		    		}
+		        } 
+		    } while (FindNextFile(hFind, &data) != 0);
+		    FindClose(hFind);
+		    return true;
 		};
 };
+
+typedef struct {
+	bool flag;
+	string searchString;
+	queue<string> names;
+} threadType;
+
+DWORD WINAPI showContainedFiles(LPVOID voidPointer) {
+	threadType &fan = *((threadType*)voidPointer);
+	while (!(fan.flag == true && fan.names.empty())) {
+		//cout << fan.names.front() << endl;
+		FileProcessor fileProcessor(fan.names.front());
+		if (fileProcessor.fileContain(fan.searchString)){
+			cout << "choosed:" << fan.names.front() << endl;
+		}
+		fan.names.pop();
+	}
+	return 0;
+}
 
 int main(int argc, char *argv[]) {
 	if (argv[1] == NULL) {
 		cerr << "No search value" << endl;
 		return 0;
 	}
-	string searchString = argv[1];
-	string searchFolder = argv[2]? argv[2] : ".";
+	string searchFolder = (argv[2] != NULL)? argv[2] : ".";
 	FolderProcessor folderProcessor;
-	vector<string> filesFullNames = folderProcessor.getFilesNamesInFolder(searchFolder);
-	for (int i = 0; i < filesFullNames.size(); ++i) {
-		FileProcessor fileProcessor(filesFullNames[i]);
-		if (fileProcessor.fileContain(searchString))
-	 		cout << filesFullNames[i] << endl;
-	}
+	threadType fan;
+	fan.flag = false;
+	fan.searchString = argv[1];
+	fan.names = queue<string>();
+	DWORD showContainedFilesID;
+	HANDLE threadHandle;
+	threadHandle = CreateThread(0, 0, showContainedFiles, &fan, 0, &showContainedFilesID);
+	fan.flag = folderProcessor.getFilesNamesInFolder(searchFolder, fan.names);
+	WaitForMultipleObjects(1, &threadHandle, 1, INFINITE);
 	return 0;
 }

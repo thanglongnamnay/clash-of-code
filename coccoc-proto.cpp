@@ -7,37 +7,29 @@
  
 using namespace std;
 
-class StringProcessor {
+class myString : public string {
 	public:
-		bool stringVectorContain(vector<string> src, const string searchString) {
-			string standardizedSearchString = standardizedString(searchString);
-			vector<string> searchWord = splitString(standardizedSearchString);
-			int numberOfWordsContain = 0;
-			for (int i = 0; i < searchWord.size(); ++i)
-				for (int j = 0; j < src.size(); ++j) {
-					if (src[j] == searchWord[i]) {
-						numberOfWordsContain++;
-						break;
-					}
-				}
-			if (numberOfWordsContain == searchWord.size()) return true;
-			return false;
+		myString() : string() {};
+		myString(string s) : string(s){};
+		myString(int i, char c) : string(i , c){};
+		myString getThis() {
+			return *this;
 		};
-		string standardizedString (const string originalString) {
+		myString removePunctuation() {
 			string resultString = "";
 			const string validChars = "0123456789abcdefghijklmnopqrstuvwxyz ";
-			for (int i = 0; i < originalString.length(); ++i) {
-				if (validChars.find(originalString[i]) < validChars.length())
-					resultString += originalString[i];
+			for (int i = 0; i < getThis().length(); ++i) {
+				if (validChars.find(getThis()[i]) < validChars.length())
+					resultString += getThis()[i];
 				else 
 					resultString += " ";
 			}
 			return resultString;
 		};
-		vector<string> splitString(const string originalString) {
+		vector<myString> splitString() {
 			int i = 0;
-			vector<string> newStrings;
-			stringstream ss(originalString);
+			vector<myString> newStrings;
+			stringstream ss(getThis());
 			string word;
 			while (getline(ss, word, ' ')) {
 				if (word.length())
@@ -49,23 +41,32 @@ class StringProcessor {
 
 class FileProcessor {
 	public:
-		FileProcessor(const string src) {
+		FileProcessor(const myString src) {
 			source = src;
 		};
-		bool fileContain(const string searchString) {
-			StringProcessor sp;
-			return sp.stringVectorContain(readFileToStrings(), searchString);
+		bool fileContain(myString searchString) {
+			vector<myString> fileContent = readFileToStrings();
+			vector<myString> searchWord = searchString.removePunctuation().splitString();
+			int numberOfWordsContain = 0;
+			for (int i = 0; i < searchWord.size(); ++i)
+				for (int j = 0; j < fileContent.size(); ++j) {
+					if (fileContent[j] == searchWord[i]) {
+						numberOfWordsContain++;
+						break;
+					}
+				}
+			if (numberOfWordsContain == searchWord.size()) return true;
+			return false;
 		};
 	private:
-		string source;
-		vector<string> readFileToStrings() {
-			vector<string> resultStrings;
-			string data;
-			StringProcessor sp;
+		myString source;
+		vector<myString> readFileToStrings() {
+			vector<myString> resultStrings;
+			myString data;
 			ifstream file(source.c_str(), ios::in);
 			while (!file.eof()) {
 				file >> data;
-				stringstream ss(sp.standardizedString(data));
+				stringstream ss(data.removePunctuation());
 				while(getline(ss, data, ' ')){
 					resultStrings.push_back(data);
 				}

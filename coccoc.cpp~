@@ -15,7 +15,7 @@ class StringProcessor {
 			int numberOfWordsContain = 0;
 			for (int i = 0; i < searchWord.size(); ++i)
 				for (int j = 0; j < src.size(); ++j) {
-					if (src.at(j) == searchWord.at(i)) {
+					if (src[j] == searchWord[i]) {
 						numberOfWordsContain++;
 						break;
 					}
@@ -56,7 +56,7 @@ class FileProcessor {
 			StringProcessor sp;
 			return sp.stringVectorContain(readFileToStrings(), searchString);
 		};
-		private:
+	private:
 		string source;
 		vector<string> readFileToStrings() {
 			vector<string> resultStrings;
@@ -77,23 +77,45 @@ class FileProcessor {
 
 class FolderProcessor {
 	public:
+		string standardizedPath(const string path) {
+			const string invalidChars = "*?\"|";
+			string resultPath = "";
+			int i = 0;
+			while (i < path.length()) {
+				if (invalidChars.find(path[i]) >= invalidChars.length()) {
+					resultPath += path[i];
+				}
+				i++;
+			}
+			return resultPath;
+		};
 		vector<string> getFilesNamesInFolder(const string source = ".") {
 			vector<string> resultFilesNames;
 			const string validName = "0123456789abcdefghijklmnopqrstuvwxyz";
+			const DWORD MAX_SIZE_SCAN = 1024;
 			int length = 0;
-			string path = source + "\\*";
+			string path = standardizedPath(source);
+			string pattern = path + "\\*";
 		    WIN32_FIND_DATA data;
 		    HANDLE hFind;
-		    if ((hFind = FindFirstFile(path.c_str(), &data)) == INVALID_HANDLE_VALUE) {
+		    if ((hFind = FindFirstFile(pattern.c_str(), &data)) == INVALID_HANDLE_VALUE) {
 		    	return vector<string>(); //path is not a folder
     		}
 	        do {
+				if (data.nFileSizeLow > MAX_SIZE_SCAN*1024 || data.nFileSizeHigh> 0) {
+					continue;
+				}
 	        	string fileName = data.cFileName;
 	            if (validName.find(char(tolower(fileName[0]))) < validName.length()){
-	            	vector<string> temp = getFilesNamesInFolder(source + "\\" + fileName);
+	            	vector<string> temp = getFilesNamesInFolder(path + "\\" + fileName);
 	            	if (temp.empty()){
-	           	 		resultFilesNames.push_back(source + "\\" + fileName);
-		            } else if (temp.at(0) != "."){
+	           	 		resultFilesNames.push_back(path + "\\" + fileName);
+	           	 		
+						#ifdef DEBUG
+					   		cout << path + "\\" + fileName;
+							system("cls");
+						#endif
+		            } else if (temp[0] != "."){
             			resultFilesNames.insert(resultFilesNames.end(), temp.begin(), temp.end());
             		}
 	            } 
@@ -113,14 +135,13 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 	string searchString = argv[1];
-	string searchFolder = (argv[2] != NULL)? argv[2] : ".";
-	
+	string searchFolder = argv[2]? argv[2] : ".";
 	FolderProcessor folderProcessor;
 	vector<string> filesFullNames = folderProcessor.getFilesNamesInFolder(searchFolder);
 	for (int i = 0; i < filesFullNames.size(); ++i) {
-		FileProcessor fileProcessor(filesFullNames.at(i));
+		FileProcessor fileProcessor(filesFullNames[i]);
 		if (fileProcessor.fileContain(searchString))
-		 cout << filesFullNames.at(i) << endl;
+	 		cout << filesFullNames[i] << endl;
 	}
 	return 0;
 }
