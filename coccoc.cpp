@@ -1,55 +1,52 @@
 #include <iostream>
 #include <fstream>
-#include <string>
 #include <vector>
+#include <set>
 #include <windows.h>
 #include <sstream>
-
 using namespace std;
-
-class StringProcessor
+class myString : public string
 {
 public:
-    bool stringVectorContain(vector<string> src, const string searchString)
+    myString() : string() {};
+    myString(string s) : string(s) {};
+    myString(int i, char c) : string(i , c) {};
+    myString getMyString()
     {
-        string standardizedSearchString = standardizedString(searchString);
-        vector<string> searchWord = splitString(standardizedSearchString);
-        int numberOfWordsContain = 0;
-        for (int i = 0; i < searchWord.size(); ++i)
-            for (int j = 0; j < src.size(); ++j)
-            {
-                if (src[j] == searchWord[i])
-                {
-                    numberOfWordsContain++;
-                    break;
-                }
-            }
-        if (numberOfWordsContain == searchWord.size()) return true;
-        return false;
+        return *this;
     };
-    string standardizedString (const string originalString)
+    myString removePunctuation()
     {
         string resultString = "";
-        const string validChars = "0123456789abcdefghijklmnopqrstuvwxyz ";
-        for (int i = 0; i < originalString.length(); ++i)
+        myString validChars = string("0123456789abcdefghijklmnopqrstuvwxyz ");
+        for (int i = 0; i < getMyString().length(); ++i)
         {
-            if (validChars.find(originalString[i]) < validChars.length())
-                resultString += originalString[i];
+            if (validChars.contain(tolower(getMyString()[i])))
+                resultString += getMyString()[i];
             else
                 resultString += " ";
         }
         return resultString;
     };
-    vector<string> splitString(const string originalString)
+    bool contain(char c) {
+    	int i = 0;
+    	myString s = getMyString();
+		int len = s.length();
+    	while (i < len && s[i] != c)
+    		++i;
+   		if (i == len) return false;
+   		return true;
+    }
+    set<string> splitString()
     {
         int i = 0;
-        vector<string> newStrings;
-        stringstream ss(originalString);
+        set<string> newStrings;
+        stringstream ss(getMyString());
         string word;
         while (getline(ss, word, ' '))
         {
             if (word.length())
-                newStrings.push_back(word);
+                newStrings.insert(word);
         }
         return newStrings;
     };
@@ -58,35 +55,73 @@ public:
 class FileProcessor
 {
 public:
-    FileProcessor(const string src)
+    void setSource(string src)
     {
         source = src;
-    };
-    bool fileContain(const string searchString)
+    }
+    bool fileContain(set<string> searchWord)
     {
-        StringProcessor sp;
-        return sp.stringVectorContain(readFileToStrings(), searchString);
+    	pair<int, int> minmax = minMaxStringLength(searchWord);
+    	int minLen = minmax.first;
+    	int maxLen = minmax.second;
+        set<string> fileContent = readFileToStringsFiltered(maxLen, minLen);
+        for (set<string>::iterator it = searchWord.begin(); it != searchWord.end(); ++it)
+        {
+            if (fileContent.find(*it) == fileContent.end()) return false;
+        }
+        return true;
     };
 private:
-    string source;
-    vector<string> readFileToStrings()
+    myString source;
+    set<string> readFileToStringsFiltered(int maxLen, int minLen = 1)
     {
-        vector<string> resultStrings;
-        string data;
-        StringProcessor sp;
+        set<string> resultStrings;
         ifstream file(source.c_str(), ios::in);
+        if (!file.is_open()) return resultStrings;
+        //cout << "Checking:" << source << endl;
         while (!file.eof())
         {
+            string data;
             file >> data;
-            stringstream ss(sp.standardizedString(data));
-            while(getline(ss, data, ' '))
+            int i = 0;
+            string temp = "";
+            while (i < data.length())
             {
-                resultStrings.push_back(data);
+                char c = tolower(data[i]);
+                if (c >= '0' && c <= '9' || c >= 'a' && c <= 'z')
+                    temp += data[i];
+                else if (temp.length() >= minLen && temp.length() <= maxLen)
+                {
+                    resultStrings.insert(temp);
+            		//cout << "temp1:" << temp <<endl;
+            		temp = "";
+                }
+                else 
+            		temp = "";
+                ++i;
+            }
+            if (temp.length() >= minLen && temp.length() <= maxLen)
+            {
+          		//cout << "temp3:" << temp <<endl;
+                resultStrings.insert(temp);
             }
         }
         file.close();
+        //for (set<string>::iterator i = resultStrings.begin(); i != resultStrings.end(); ++i)
+        	//cout << *i << endl;
         return resultStrings;
     };
+    pair<int, int> minMaxStringLength(set<string> ss) {
+		set<string>::iterator max = ss.begin();
+		set<string>::iterator min = max;
+		for (set<string>::iterator i = ++ss.begin(); i != ss.end(); ++i) {
+			if ((*i).length() > (*max).length()) 
+				max = i;
+			if ((*i).length() < (*min).length()) 
+				min = i;
+		}
+		return pair<int, int>((*min).length(), (*max).length());
+	};
 };
 
 class FolderProcessor
@@ -103,56 +138,34 @@ public:
             {
                 resultPath += path[i];
             }
-            i++;
+            ++i;
         }
         return resultPath;
     };
-    vector<string> getFilesNamesInFolder(const string source = ".")
+    bool getFilesNamesInFolder(const string path = ".", vector<string> &resultFilesNames)
     {
-        vector<string> resultFilesNames;
-        const string validName = "0123456789abcdefghijklmnopqrstuvwxyz";
-        const DWORD MAX_SIZE_SCAN = 1024;
-        int length = 0;
-        string path = standardizedPath(source);
         string pattern = path + "\\*";
         WIN32_FIND_DATA data;
-        HANDLE hFind;
-        if ((hFind = FindFirstFile(pattern.c_str(), &data)) == INVALID_HANDLE_VALUE)
+        HANDLE hFind = FindFirstFile(pattern.c_str(), &data);
+        if (hFind == INVALID_HANDLE_VALUE)
         {
-            return vector<string>(); //path is not a folder
+            return false; //path is not a folder
         }
         do
         {
-            if (data.nFileSizeLow > MAX_SIZE_SCAN*1024 || data.nFileSizeHigh> 0)
-            {
-                continue;
-            }
             string fileName = data.cFileName;
-            if (validName.find(char(tolower(fileName[0]))) < validName.length())
+            char c = tolower(fileName[0]);
+            if (c >= '0' && c <= '9' || c >= 'a' && c <= 'z')
             {
-                vector<string> temp = getFilesNamesInFolder(path + "\\" + fileName);
-                if (temp.empty())
+                if (data.dwFileAttributes != FILE_ATTRIBUTE_DIRECTORY)
                 {
                     resultFilesNames.push_back(path + "\\" + fileName);
-
-#ifdef DEBUG
-                    cout << path + "\\" + fileName;
-                    system("cls");
-#endif
                 }
-                else if (temp[0] != ".")
-                {
-                    resultFilesNames.insert(resultFilesNames.end(), temp.begin(), temp.end());
-                }
+                else getFilesNamesInFolder(path + "\\" + fileName, resultFilesNames);
             }
         }
         while (FindNextFile(hFind, &data) != 0);
         FindClose(hFind);
-        if (!resultFilesNames.empty()) //something in the folder
-            return resultFilesNames;
-
-        resultFilesNames.push_back("."); //empty folder
-        return resultFilesNames;
     };
 };
 
@@ -164,13 +177,19 @@ int main(int argc, char *argv[])
         return 0;
     }
     string searchString = argv[1];
+    myString searchWord(searchString);
+    set<string> searchWords = searchWord.removePunctuation().splitString();
     string searchFolder = argv[2]? argv[2] : ".";
     FolderProcessor folderProcessor;
-    vector<string> filesFullNames = folderProcessor.getFilesNamesInFolder(searchFolder);
-    for (int i = 0; i < filesFullNames.size(); ++i)
+    string path = folderProcessor.standardizedPath(searchFolder);
+    vector<string> filesFullNames;
+    folderProcessor.getFilesNamesInFolder(path, filesFullNames);
+    int namesSize = filesFullNames.size();
+    FileProcessor fileProcessor;
+    for (int i = 0; i < namesSize; ++i)
     {
-        FileProcessor fileProcessor(filesFullNames[i]);
-        if (fileProcessor.fileContain(searchString))
+        fileProcessor.setSource(filesFullNames[i]);
+        if (fileProcessor.fileContain(searchWords))
             cout << filesFullNames[i] << endl;
     }
     return 0;

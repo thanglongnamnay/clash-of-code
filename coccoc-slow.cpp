@@ -4,92 +4,84 @@
 #include <vector>
 #include <windows.h>
 #include <sstream>
-#include <set>
-#include <time.h>
+
 using namespace std;
 
-class myString : public string
+class StringProcessor
 {
 public:
-    myString() : string() {};
-    myString(string s) : string(s) {};
-    myString(int i, char c) : string(i , c) {};
-    myString getThis()
+    bool stringVectorContain(vector<string> src, const string searchString)
     {
-        return *this;
+        string standardizedSearchString = standardizedString(searchString);
+        vector<string> searchWord = splitString(standardizedSearchString);
+        int numberOfWordsContain = 0;
+        for (int i = 0; i < searchWord.size(); ++i)
+            for (int j = 0; j < src.size(); ++j)
+            {
+                if (src[j] == searchWord[i])
+                {
+                    numberOfWordsContain++;
+                    break;
+                }
+            }
+        if (numberOfWordsContain == searchWord.size()) return true;
+        return false;
     };
-    myString removePunctuation()
+    string standardizedString (const string originalString)
     {
         string resultString = "";
         const string validChars = "0123456789abcdefghijklmnopqrstuvwxyz ";
-        for (int i = 0; i < getThis().length(); ++i)
+        for (int i = 0; i < originalString.length(); ++i)
         {
-            if (validChars.find(getThis()[i]) < validChars.length())
-                resultString += getThis()[i];
+            if (validChars.find(originalString[i]) < validChars.length())
+                resultString += originalString[i];
             else
                 resultString += " ";
         }
         return resultString;
     };
-    set<myString> splitString()
+    vector<string> splitString(const string originalString)
     {
         int i = 0;
-        set<myString> newStrings;
-        stringstream ss(getThis());
+        vector<string> newStrings;
+        stringstream ss(originalString);
         string word;
         while (getline(ss, word, ' '))
         {
             if (word.length())
-                newStrings.insert(word);
+                newStrings.push_back(word);
         }
         return newStrings;
     };
 };
+
 class FileProcessor
 {
 public:
-    FileProcessor(const myString src)
+    FileProcessor(const string src)
     {
         source = src;
     };
-    bool fileContain(set<myString> searchWord)
+    bool fileContain(const string searchString)
     {
-        set<myString> fileContent = readFileToStrings();
-        int fileContentSize = fileContent.size();
-        int numberOfWordsContain = 0;
-        for (set<myString>::iterator i = searchWord.begin(); i != searchWord.end(); ++i)
-        {
-        	if (fileContent.find(*i) == fileContent.end()) return false;
-        }
-        return true;
+        StringProcessor sp;
+        return sp.stringVectorContain(readFileToStrings(), searchString);
     };
 private:
-    myString source;
-    set<myString> readFileToStrings()
+    string source;
+    vector<string> readFileToStrings()
     {
-        set<myString> resultStrings;
+        vector<string> resultStrings;
         string data;
-        const string validChars = "0123456789abcdefghijklmnopqrstuvwxyz";
-        const int validCharsLen = validChars.length();
-        string temp;
+        StringProcessor sp;
         ifstream file(source.c_str(), ios::in);
-        if (!file.is_open()) return resultStrings;
-		while (!file.eof())
+        while (!file.eof())
         {
             file >> data;
-            int i = 0;
-            temp = "";
-            while (i < data.length()) {
-            	if (validChars.find(data[i]) < validCharsLen) {
-		            temp += data[i];
-            	}else {
-	            	resultStrings.insert(temp);
-	            	temp = "";
-	            }
-	            i++;
-            }
-            if (temp.length()){
-          		resultStrings.insert(temp);
+            stringstream ss(sp.standardizedString(data));
+            while(getline(ss, data, ' '))
+            {
+                resultStrings.push_back(data);
             }
         }
         file.close();
@@ -117,9 +109,9 @@ public:
     };
     vector<string> getFilesNamesInFolder(const string source = ".")
     {
-//        const DWORD MAX_SIZE_SCAN = 1024;
         vector<string> resultFilesNames;
         const string validName = "0123456789abcdefghijklmnopqrstuvwxyz";
+        const DWORD MAX_SIZE_SCAN = 1024;
         int length = 0;
         string path = standardizedPath(source);
         string pattern = path + "\\*";
@@ -131,10 +123,10 @@ public:
         }
         do
         {
-            /*if (data.nFileSizeLow > MAX_SIZE_SCAN*1024 || data.nFileSizeHigh> 0)
+            if (data.nFileSizeLow > MAX_SIZE_SCAN*1024 || data.nFileSizeHigh> 0)
             {
                 continue;
-            }*/
+            }
             string fileName = data.cFileName;
             if (validName.find(char(tolower(fileName[0]))) < validName.length())
             {
@@ -144,7 +136,8 @@ public:
                     resultFilesNames.push_back(path + "\\" + fileName);
 
 #ifdef DEBUG
-                    cout << "" << path + "\\" + fileName << endl;
+                    cout << path + "\\" + fileName;
+                    system("cls");
 #endif
                 }
                 else if (temp[0] != ".")
@@ -157,6 +150,7 @@ public:
         FindClose(hFind);
         if (!resultFilesNames.empty()) //something in the folder
             return resultFilesNames;
+
         resultFilesNames.push_back("."); //empty folder
         return resultFilesNames;
     };
@@ -164,32 +158,20 @@ public:
 
 int main(int argc, char *argv[])
 {
-	clock_t t;
-	t = clock();
     if (argv[1] == NULL)
     {
         cerr << "No search value" << endl;
         return 0;
     }
     string searchString = argv[1];
-    myString searchWord(searchString);
-    set<myString> searchWords = searchWord.removePunctuation().splitString();
     string searchFolder = argv[2]? argv[2] : ".";
     FolderProcessor folderProcessor;
     vector<string> filesFullNames = folderProcessor.getFilesNamesInFolder(searchFolder);
-#ifdef DEBUG
-    cout << "get files names done!" << endl << "=============================================" << endl;
-#endif
     for (int i = 0; i < filesFullNames.size(); ++i)
     {
         FileProcessor fileProcessor(filesFullNames[i]);
-        #ifdef DEBUG
-        cout << "Checking:" << filesFullNames[i] << endl;
-        #endif
-        if (fileProcessor.fileContain(searchWords))
+        if (fileProcessor.fileContain(searchString))
             cout << filesFullNames[i] << endl;
     }
-    t = clock() - t;
-    cout << "Done in " << (float(t))/CLOCKS_PER_SEC << "s" << endl;
     return 0;
 }
