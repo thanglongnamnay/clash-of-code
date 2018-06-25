@@ -61,10 +61,10 @@ public:
     }
     bool fileContain(set<string> searchWord)
     {
-    	pair<int, int> minmax = minMaxStringLength(searchWord);
+    	pair<int, int> minmax = stringLengthInterval(searchWord);
     	int minLen = minmax.first;
     	int maxLen = minmax.second;
-        set<string> fileContent = readFileToStringsFiltered(maxLen, minLen);
+        set<string> fileContent = stringsInFile(maxLen, minLen);
         for (set<string>::iterator it = searchWord.begin(); it != searchWord.end(); ++it)
         {
             if (fileContent.find(*it) == fileContent.end()) return false;
@@ -73,7 +73,7 @@ public:
     };
 private:
     myString source;
-    set<string> readFileToStringsFiltered(int maxLen, int minLen = 1)
+    set<string> stringsInFile(int maxLen, int minLen = 1)
     {
         set<string> resultStrings;
         ifstream file(source.c_str(), ios::in);
@@ -111,7 +111,7 @@ private:
         	//cout << *i << endl;
         return resultStrings;
     };
-    pair<int, int> minMaxStringLength(set<string> ss) {
+    pair<int, int> stringLengthInterval(set<string> ss) {
 		set<string>::iterator max = ss.begin();
 		set<string>::iterator min = max;
 		for (set<string>::iterator i = ++ss.begin(); i != ss.end(); ++i) {
