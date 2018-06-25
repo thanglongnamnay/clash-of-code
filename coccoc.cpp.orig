@@ -5,6 +5,7 @@
 #include <windows.h>
 #include <sstream>
 #include <thread>
+#include <time.h>
 using namespace std;
 
 class myString : public string
@@ -12,7 +13,6 @@ class myString : public string
 public:
     myString() : string() {};
     myString(string s) : string(s) {};
-    myString(char* c) : string(c) {};
     myString(int i, char c) : string(i , c) {};
     myString getMyString()
     {
@@ -31,15 +31,14 @@ public:
         }
         return resultString;
     };
-    bool contain(char c)
-    {
-        int i = 0;
-        myString s = getMyString();
-        int len = s.length();
-        while (i < len && s[i] != c)
-            ++i;
-        if (i == len) return false;
-        return true;
+    bool contain(char c) {
+    	int i = 0;
+    	myString s = getMyString();
+		int len = s.length();
+    	while (i < len && s[i] != c)
+    		++i;
+   		if (i == len) return false;
+   		return true;
     }
     set<string> splitString()
     {
@@ -62,9 +61,9 @@ public:
     bool fileContain(set<string> searchWord, string src)
     {
         source = src;
-        pair<int, int> minmax = stringLengthInterval(searchWord);
-        int minLen = minmax.first;
-        int maxLen = minmax.second;
+    	pair<int, int> minmax = stringLengthInterval(searchWord);
+    	int minLen = minmax.first;
+    	int maxLen = minmax.second;
         set<string> fileContent = stringsInFile(maxLen, minLen);
         for (set<string>::iterator it = searchWord.begin(); it != searchWord.end(); ++it)
         {
@@ -93,10 +92,10 @@ private:
                 else if (temp.length() >= minLen && temp.length() <= maxLen)
                 {
                     resultStrings.insert(temp);
-                    temp = "";
+            		temp = "";
                 }
-                else
-                    temp = "";
+                else 
+            		temp = "";
                 ++i;
             }
             if (temp.length() >= minLen && temp.length() <= maxLen)
@@ -107,25 +106,23 @@ private:
         file.close();
         return resultStrings;
     };
-    pair<int, int> stringLengthInterval(set<string> ss) //get min and max lengths of a string
-    {
-        set<string>::iterator max = ss.begin();
-        set<string>::iterator min = max;
-        for (set<string>::iterator i = ++ss.begin(); i != ss.end(); ++i)
-        {
-            if ((*i).length() > (*max).length())
-                max = i;
-            if ((*i).length() < (*min).length())
-                min = i;
-        }
-        return pair<int, int>((*min).length(), (*max).length());
-    };
+    pair<int, int> stringLengthInterval(set<string> ss) {
+		set<string>::iterator max = ss.begin();
+		set<string>::iterator min = max;
+		for (set<string>::iterator i = ++ss.begin(); i != ss.end(); ++i) {
+			if ((*i).length() > (*max).length()) 
+				max = i;
+			if ((*i).length() < (*min).length()) 
+				min = i;
+		}
+		return pair<int, int>((*min).length(), (*max).length());
+	};
 };
 
 class FolderProcessor
 {
 public:
-    string standardizedPath(const string path) //delete some useless chars in path
+    string standardizedPath(const string path)
     {
         const string invalidChars = "*?\"|";
         string resultPath = "";
@@ -167,24 +164,23 @@ public:
     };
 };
 
-void processAndPrintResult(set<string> searchWords, deque<string> &filesFullNames, bool isBack)
-{
+bool stringLengthIntervalCondition(string s, int maxLen, int minLen){
+	if (s.length() >= minLen && s.length() <= maxLen) return true;
+	return false;
+}
+
+void processAndPrintResult(set<string> searchWords, deque<string> &filesFullNames, bool isBack) {
     FileProcessor fileProcessor;
-    while(filesFullNames.size())
-    {
+    while(filesFullNames.size()){
         string name;
-        if (isBack)
-        {
+        if (isBack){
             name = filesFullNames.back();
             filesFullNames.pop_back();
-        }
-        else
-        {
+        } else {
             name = filesFullNames.front();
             filesFullNames.pop_front();
         }
-        if(fileProcessor.fileContain(searchWords, name))
-        {
+        if(fileProcessor.fileContain(searchWords, name)){
             cout << name + "\n";
         }
     }
@@ -192,14 +188,16 @@ void processAndPrintResult(set<string> searchWords, deque<string> &filesFullName
 
 int main(int argc, char *argv[])
 {
+	clock_t t;
+	t = clock();
     if (argv[1] == NULL)
     {
         cerr << "No search value" << endl;
         return 0;
     }
-    myString searchString(argv[1]);
-    set<string> searchWords = searchString.removePunctuation().splitString();
-    
+    string searchString = argv[1];
+    myString searchWord(searchString);
+    set<string> searchWords = searchWord.removePunctuation().splitString();
     string searchFolder = argv[2]? argv[2] : ".";
     FolderProcessor folderProcessor;
     string path = folderProcessor.standardizedPath(searchFolder);
@@ -210,5 +208,7 @@ int main(int argc, char *argv[])
     thread front(processAndPrintResult, searchWords, ref(filesFullNames), false);
     back.join();
     front.join();
+    t = clock() - t;
+    cout << "Done in " << (float(t))/CLOCKS_PER_SEC << endl;
     return 0;
 }
